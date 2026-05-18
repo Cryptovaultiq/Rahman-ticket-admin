@@ -143,22 +143,25 @@ class AdminEventManager {
   // Load Submissions
   async loadSubmissions() {
     try {
-      // Always fetch fresh from GitHub (not cached localStorage)
-      // This ensures we get submissions from the customer API
-      let response = await fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/submissions.json');
-      if (response.ok) {
-        const data = await response.json();
-        this.submissions = data.submissions || [];
-        this.saveSubmissionsLocally();
-        return;
-      }
-      
-      // Also check customer repo for submissions
-      response = await fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Own-ticketmaster-Customer/main/submissions.json');
-      if (response.ok) {
-        const data = await response.json();
-        this.submissions = data.submissions || [];
-        this.saveSubmissionsLocally();
+      // Disabled: Direct GitHub URL fetching from My-Ticketmaster repos
+      // This prevents unauthorized access to other projects' data
+      // Instead, use API endpoints with proper authentication
+      // 
+      // DISABLED:
+      // - fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/submissions.json')
+      // - fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Own-ticketmaster-Customer/main/submissions.json')
+      //
+      // Load from localStorage as fallback
+      const stored = localStorage.getItem('submissions');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          this.submissions = data.submissions || [];
+        } catch (e) {
+          this.submissions = [];
+        }
+      } else {
+        this.submissions = [];
       }
     } catch (error) {
       console.error('Error loading submissions:', error);
@@ -664,13 +667,16 @@ class AdminEventManager {
   // Load Seller Configuration
   async loadSellerConfig() {
     try {
-      const response = await fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/seller-config.json');
-      if (response.ok) {
-        const data = await response.json();
-        const sellerLinkInput = document.getElementById('seller-link');
-        if (sellerLinkInput && data.sellerLink) {
-          sellerLinkInput.value = data.sellerLink;
-        }
+      // Disabled: Direct GitHub URL fetching from My-Ticketmaster repos
+      // This prevents unauthorized access to other projects' configuration
+      // DISABLED: fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/seller-config.json')
+      //
+      // Set default seller link or use local configuration
+      const sellerLinkInput = document.getElementById('seller-link');
+      if (sellerLinkInput) {
+        // Use default value from seller-config.json or set a placeholder
+        const defaultLink = 'https://example.com'; // Replace with your Rahman repo's seller link if needed
+        sellerLinkInput.value = defaultLink;
       }
     } catch (error) {
       console.error('Error loading seller config:', error);
