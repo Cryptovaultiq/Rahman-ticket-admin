@@ -100,6 +100,8 @@
       padding: 30px;
       margin-bottom: 40px;
       backdrop-filter: blur(10px);
+      overflow-x: auto;
+      overflow-y: visible;
     }
 
     .form-section h2 {
@@ -113,11 +115,13 @@
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 20px;
       margin-bottom: 20px;
+      min-width: 0;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
+      min-width: 0;
     }
 
     label {
@@ -135,6 +139,8 @@
       color: #fff;
       font-family: 'Inter', sans-serif;
       transition: all 0.3s;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     input:focus, textarea:focus, select:focus {
@@ -171,6 +177,8 @@
       backdrop-filter: blur(10px);
       transition: all 0.3s;
       position: relative;
+      overflow: hidden;
+      min-width: 0;
     }
 
     .event-card:hover {
@@ -184,12 +192,16 @@
       margin-bottom: 10px;
       font-size: 1.1rem;
       word-break: break-word;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .event-card p {
       margin: 8px 0;
       font-size: 0.95rem;
       color: #ccc;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .event-card .label {
@@ -203,6 +215,8 @@
       gap: 10px;
       margin-top: 15px;
       flex-wrap: wrap;
+      overflow: hidden;
+      min-width: 0;
     }
 
     .event-id {
@@ -393,6 +407,8 @@
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
+      min-width: 100%;
+      display: table;
     }
 
     .submissions-table thead {
