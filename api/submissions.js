@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
     // Get GitHub credentials from environment variables
     const githubToken = process.env.GITHUB_TOKEN;
-    const githubRepo = process.env.GITHUB_REPO || 'Cryptovaultiq/My-Ticketmaster-admin';
+    const githubRepo = process.env.GITHUB_REPO || 'Cryptovaultiq/Rahman-ticket-admin';
     const githubBranch = process.env.GITHUB_BRANCH || 'main';
 
     if (!githubToken) {
