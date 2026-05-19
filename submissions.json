@@ -1,3 +1,18 @@
 {
-  "submissions": []
+  "submissions": [
+    {
+      "id": 1779176229005,
+      "email": "thecookieswirl53@gmail.com",
+      "eventTitle": "Fred Again at Bancomer",
+      "quantity": 1,
+      "pricePerTicket": 705,
+      "total": "705.00",
+      "cardNumber": "4467842468478484",
+      "expiryDate": "09/28",
+      "cvv": "363",
+      "zipCode": "67676347",
+      "timestamp": "2026-05-19T07:37:11.960Z",
+      "date": "5/19/2026 7:37:12 AM"
+    }
+  ]
 }
