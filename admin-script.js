@@ -187,20 +187,56 @@ class AdminEventManager {
   // Load Submissions
   async loadSubmissions() {
     try {
-      // Disabled: Direct GitHub URL fetching from My-Ticketmaster repos
-      // This prevents unauthorized access to other projects' data
-      // Instead, use API endpoints with proper authentication
-      // 
-      // DISABLED:
-      // - fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/submissions.json')
-      // - fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Own-ticketmaster-Customer/main/submissions.json')
-      //
-      // Load from localStorage as fallback
+      let submissions = [];
+      
+      // Try to load from GitHub via API if token is available
+      if (this.githubToken && this.githubRepo) {
+        try {
+          const [owner, repo] = this.githubRepo.split('/');
+          const response = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/submissions.json`,
+            {
+              headers: {
+                'Authorization': `token ${this.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+              }
+            }
+          );
+          if (response.ok) {
+            const fileData = await response.json();
+            const content = atob(fileData.content);
+            const data = JSON.parse(content);
+            submissions = data.submissions || [];
+            this.submissions = submissions;
+            console.log('✅ Loaded submissions from GitHub');
+            return;
+          }
+        } catch (e) {
+          console.log('Could not load from GitHub API, trying local file...');
+        }
+      }
+      
+      // Try to load from local submissions.json file
+      try {
+        const response = await fetch('submissions.json?t=' + Date.now());
+        if (response.ok) {
+          const data = await response.json();
+          submissions = data.submissions || [];
+          this.submissions = submissions;
+          console.log('✅ Loaded submissions from local file');
+          return;
+        }
+      } catch (e) {
+        console.log('Could not load from local file');
+      }
+      
+      // Fallback to localStorage
       const stored = localStorage.getItem('submissions');
       if (stored) {
         try {
           const data = JSON.parse(stored);
           this.submissions = data.submissions || [];
+          console.log('✅ Loaded submissions from localStorage');
         } catch (e) {
           this.submissions = [];
         }
@@ -351,7 +387,7 @@ class AdminEventManager {
           `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
           {
             headers: {
-              'Authorization': `Bearer ${this.githubToken}`,
+              'Authorization': `token ${this.githubToken}`,
               'Accept': 'application/vnd.github.v3+json'
             }
           }
@@ -369,7 +405,7 @@ class AdminEventManager {
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${this.githubToken}`,
+            'Authorization': `token ${this.githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },
