@@ -14,15 +14,34 @@ class AdminEventManager {
     this.init();
   }
 
-  // Load GitHub configuration from API
+  // Load GitHub configuration from localStorage or environment
   async loadGithubConfig() {
     try {
-      const response = await fetch('/api/config');
-      if (response.ok) {
-        const config = await response.json();
-        this.githubToken = config.githubToken || '';
-        this.githubRepo = config.githubRepo || '';
-        this.githubBranch = config.githubBranch || 'main';
+      // Try to load from localStorage first
+      const savedToken = localStorage.getItem('githubToken');
+      const savedRepo = localStorage.getItem('githubRepo');
+      const savedBranch = localStorage.getItem('githubBranch');
+      
+      this.githubToken = savedToken || '';
+      this.githubRepo = savedRepo || 'Cryptovaultiq/Rahman-ticket-admin';
+      this.githubBranch = savedBranch || 'main';
+      
+      // Also try to load from API as fallback
+      try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+          const config = await response.json();
+          if (config.githubToken) this.githubToken = config.githubToken;
+          if (config.githubRepo) this.githubRepo = config.githubRepo;
+          if (config.githubBranch) this.githubBranch = config.githubBranch;
+          
+          // Save to localStorage for future use
+          localStorage.setItem('githubToken', this.githubToken);
+          localStorage.setItem('githubRepo', this.githubRepo);
+          localStorage.setItem('githubBranch', this.githubBranch);
+        }
+      } catch (e) {
+        console.log('API config not available, using localStorage or defaults');
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -51,8 +70,33 @@ class AdminEventManager {
 
   // Display GitHub authentication status
   displayAuthStatus() {
-    const status = this.githubToken ? '✅ GitHub authenticated (via environment)' : '⚠️ GitHub not configured (set environment variables on Vercel)';
+    const status = this.githubToken ? '✅ GitHub authenticated' : '⚠️ GitHub not configured';
     console.log(status);
+    
+    // Add token input UI if not authenticated
+    if (!this.githubToken) {
+      const tokenBtn = document.createElement('button');
+      tokenBtn.textContent = '🔑 Set GitHub Token';
+      tokenBtn.style.cssText = 'padding: 0.5rem 1rem; margin: 1rem 0; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer;';
+      tokenBtn.onclick = () => this.promptForGitHubToken();
+      
+      const authStatus = document.querySelector('.auth-status') || document.querySelector('.form-section');
+      if (authStatus && !document.querySelector('#token-btn')) {
+        tokenBtn.id = 'token-btn';
+        authStatus.insertBefore(tokenBtn, authStatus.firstChild);
+      }
+    }
+  }
+  
+  // Prompt for GitHub token
+  promptForGitHubToken() {
+    const token = prompt('Enter your GitHub Personal Access Token (with repo permissions):');
+    if (token && token.trim()) {
+      this.githubToken = token.trim();
+      localStorage.setItem('githubToken', this.githubToken);
+      this.displayAuthStatus();
+      alert('✅ GitHub token saved! Events will now sync to GitHub.');
+    }
   }
 
   // Load Events from localStorage or events.json
@@ -362,14 +406,17 @@ class AdminEventManager {
             if (uploaded) {
               // Return full GitHub raw URL
               const [owner, repo] = this.githubRepo.split('/');
-              const imageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${this.githubBranch}/${uploadPath}`;
+              const imageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${this.githubBranch}/${uploadPath}?t=${Date.now()}`;
+              console.log('✅ Image uploaded to GitHub:', imageUrl);
               resolve(imageUrl);
             } else {
-              // Fallback to just storing filename
+              // GitHub upload failed - use relative path as fallback
+              console.warn('GitHub upload failed, using relative path:', fileName);
               resolve(fileName);
             }
           } else {
-            // No GitHub config, just use filename
+            // No GitHub config, use relative filename for local development
+            console.log('No GitHub token configured, using relative path:', fileName);
             resolve(fileName);
           }
         } catch (error) {
@@ -399,7 +446,7 @@ class AdminEventManager {
           `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
           {
             headers: {
-              'Authorization': `Bearer ${this.githubToken}`,
+              'Authorization': `token ${this.githubToken}`,
               'Accept': 'application/vnd.github.v3+json'
             }
           }
@@ -418,7 +465,7 @@ class AdminEventManager {
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${this.githubToken}`,
+            'Authorization': `token ${this.githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },
@@ -431,6 +478,10 @@ class AdminEventManager {
         }
       );
 
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        console.error('GitHub upload failed:', errorData);
+      }
       return uploadResponse.ok;
     } catch (error) {
       console.error('GitHub upload error:', error);
@@ -604,7 +655,7 @@ class AdminEventManager {
   // GitHub: Sync Events to GitHub
   async syncToGithub() {
     if (!this.githubToken || !this.githubRepo) {
-      console.warn('GitHub not configured');
+      console.warn('GitHub not configured - events saved locally only');
       return;
     }
 
@@ -621,7 +672,7 @@ class AdminEventManager {
           `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,
           {
             headers: {
-              'Authorization': `Bearer ${this.githubToken}`,
+              'Authorization': `token ${this.githubToken}`,
               'Accept': 'application/vnd.github.v3+json'
             }
           }
@@ -640,7 +691,7 @@ class AdminEventManager {
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${this.githubToken}`,
+            'Authorization': `token ${this.githubToken}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },
@@ -667,16 +718,29 @@ class AdminEventManager {
   // Load Seller Configuration
   async loadSellerConfig() {
     try {
-      // Disabled: Direct GitHub URL fetching from My-Ticketmaster repos
-      // This prevents unauthorized access to other projects' configuration
-      // DISABLED: fetch('https://raw.githubusercontent.com/Cryptovaultiq/My-Ticketmaster-admin/main/seller-config.json')
-      //
-      // Set default seller link or use local configuration
-      const sellerLinkInput = document.getElementById('seller-link');
-      if (sellerLinkInput) {
-        // Use default value from seller-config.json or set a placeholder
-        const defaultLink = 'https://example.com'; // Replace with your Rahman repo's seller link if needed
-        sellerLinkInput.value = defaultLink;
+      // Try to load from localStorage first
+      const stored = localStorage.getItem('sellerConfig');
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          const sellerLinkInput = document.getElementById('seller-link');
+          if (sellerLinkInput && data.sellerLink) {
+            sellerLinkInput.value = data.sellerLink;
+          }
+          return;
+        } catch (e) {
+          console.log('localStorage seller config invalid');
+        }
+      }
+      
+      // Try to load from seller-config.json in Rahman repo
+      const response = await fetch('seller-config.json');
+      if (response.ok) {
+        const data = await response.json();
+        const sellerLinkInput = document.getElementById('seller-link');
+        if (sellerLinkInput && data.sellerLink) {
+          sellerLinkInput.value = data.sellerLink;
+        }
       }
     } catch (error) {
       console.error('Error loading seller config:', error);
@@ -706,7 +770,14 @@ class AdminEventManager {
 
     try {
       const sellerConfig = { sellerLink };
-      await this.syncSellerConfigToGithub(sellerConfig);
+      
+      // Save to localStorage
+      localStorage.setItem('sellerConfig', JSON.stringify(sellerConfig));
+      
+      // Try to sync to GitHub if token is available
+      if (this.githubToken && this.githubRepo) {
+        await this.syncSellerConfigToGithub(sellerConfig);
+      }
       
       if (statusSpan) {
         statusSpan.style.display = 'inline';
@@ -715,7 +786,7 @@ class AdminEventManager {
         }, 3000);
       }
 
-      alert('✅ Seller link updated and saved to GitHub!');
+      alert('✅ Seller link saved' + (this.githubToken ? ' and synced to GitHub!' : ' (GitHub not configured, saved locally)'));
     } catch (error) {
       console.error('Error saving seller config:', error);
       alert('Error saving seller link. Please try again.');
