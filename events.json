@@ -65,6 +65,17 @@
       "imageUrl": "https://raw.githubusercontent.com/Cryptovaultiq/Rahman-ticket-admin/main/assets/1779150390592_IMG-20260517-WA0039.jpg?t=1779150392832",
       "imageAlt": "Harry Style",
       "category": "Music"
+    },
+    {
+      "id": 7,
+      "title": "KATSEYE: THE WILDWORLD TOUR",
+      "location": "Co-op Live, Manchester, NA",
+      "dateTime": "SUN •SEP 6, 2026 • 6:00 PM",
+      "price": 134,
+      "ticketsAvailable": 3,
+      "imageUrl": "https://raw.githubusercontent.com/Cryptovaultiq/Rahman-ticket-admin/main/assets/1779611086916_IMG_9551.jpeg?t=1779611089477",
+      "imageAlt": "Katseye",
+      "category": "Music"
     }
   ]
 }
